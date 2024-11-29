@@ -4,3 +4,9 @@
 </h1>
 
 `tubes-js` is a JavaScript client library to connect to a `tubes` server. It provides a simple API to connect to WebSocket channels and send/receive messages.
+
+## Get Started
+
+```bash
+pnpm i --save @go-tubes/tubes-js
+```
