@@ -3,4 +3,4 @@
   Tubes - WebSocket Channel Management
 </h1>
 
-`tubes-js` is a JavaScript client library to connect to a `tubes` server. It provides a simple API to manage WebSocket channels and send/receive messages.
+`tubes-js` is a JavaScript client library to connect to a `tubes` server. It provides a simple API to connect to WebSocket channels and send/receive messages.
