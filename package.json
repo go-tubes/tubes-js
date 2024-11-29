@@ -1,5 +1,5 @@
 {
-  "name": "tubes-js",
+  "name": "@go-tubes/tubes-js",
   "version": "0.0.8",
   "description": "Client library for tubes",
   "type": "module",
