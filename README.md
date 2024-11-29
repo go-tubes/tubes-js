@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/mono424/tubes/images/logo.png"><br>
+  <img src="https://raw.githubusercontent.com/go-tubes/tubes/images/logo.png"><br>
   Tubes - WebSocket Channel Management
 </h1>
 
