@@ -8,5 +8,5 @@
 ## Get Started
 
 ```bash
-pnpm i --save @go-tubes/tubes-js
+pnpm add @go-tubes/tubes-js
 ```
