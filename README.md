@@ -1,3 +1,3 @@
-# go-pts-client
+# tubes-js-client
 
-Client library for go-pts
+Client library for tubes
