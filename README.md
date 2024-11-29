@@ -3,9 +3,7 @@
   Tubes - JavaScript Client
 </h1>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/@go-tubes/tubes-js"><img src="https://img.shields.io/npm/v/@go-tubes/tubes-js.svg" alt="npm version"></a>
-</p>
+<a href="https://www.npmjs.com/package/@go-tubes/tubes-js"><img src="https://img.shields.io/npm/v/@go-tubes/tubes-js.svg" alt="npm version"></a>
 
 `tubes-js` is a JavaScript client library to connect to a `tubes` server. It provides a simple API to connect to WebSocket channels and send/receive messages.
 
