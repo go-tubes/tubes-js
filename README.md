@@ -1,6 +1,6 @@
 <h1 align="center">
   <img src="https://raw.githubusercontent.com/go-tubes/tubes/images/logo.png"><br>
-  Tubes - WebSocket Channel Management
+  Tubes - JavaScript Client
 </h1>
 
 <p align="center">
