@@ -161,9 +161,19 @@ export class TubesClient {
     this.debug("🔵 Send", { type, channel, payload });
   }
 
-  public async subscribeChannel(channel: string, handler?: MessageHandlerFn) {
+  /**
+   * This will subscribe to a channel and call the handler when a message is received on the channel.
+   * @param channel Channel you want to subscribe to
+   * @param handler Handler that will be called when a message is received on the channel
+   * @returns Promise that resolves when the subscription is complete
+   */
+  public async subscribe(channel: string, handler: MessageHandlerFn) {
     await this.lazyInit();
+    const hasHandlersAlready =
+      this.handler[channel] && this.handler[channel].length > 0;
     if (handler) this.registerHandler(channel, handler);
+    if (hasHandlersAlready) return;
+
     await this.send(channel, {
       type: RealtimeMessageTypes.RealtimeMessageTypeSubscribe,
     });
@@ -171,14 +181,17 @@ export class TubesClient {
     this.debug("Subscribed", channel);
   }
 
-  public async unsubscribeChannel(
-    channel: string,
-    { unregisterHandler = true },
-  ) {
+  /**
+   * This will unsubscribe a handler from a channel. It will not unsubscribe from the channel on the remote host if
+   * there are other handlers still subscribed to it. Otherwise, it will unsubscribe from the channel on the remote host.
+   * @param channel Channel you want to unsubscribe from
+   * @param handler Handler you want to unsubscribe
+   */
+  public async unsubscribe(channel: string, handler: MessageHandlerFn) {
     await this.lazyInit();
-    if (unregisterHandler) {
-      delete this.handler[channel];
-    }
+    if (handler) this.unregisterHandler(channel, handler);
+    if (this.handler[channel] && this.handler[channel].length > 0) return;
+
     await this.send(channel, {
       type: RealtimeMessageTypes.RealtimeMessageTypeUnsubscribe,
     });
@@ -188,24 +201,32 @@ export class TubesClient {
     this.debug("Unsubscribed", channel);
   }
 
-  public registerHandler(channel: string, handler: MessageHandlerFn) {
+  /**
+   * This unsubscribes all handlers from a channel and unsubscribes from the channel on the remote host too.
+   * @param channel Channel you want to unsubscribe from
+   */
+  public async unsubscribeAll(channel: string) {
+    await this.lazyInit();
+    delete this.handler[channel];
+    await this.send(channel, {
+      type: RealtimeMessageTypes.RealtimeMessageTypeUnsubscribe,
+    });
+    this.subscribedChannels = this.subscribedChannels.filter(
+      (c) => c !== channel,
+    );
+    this.debug("Unsubscribed", channel);
+  }
+
+  private registerHandler(channel: string, handler: MessageHandlerFn) {
     if (!this.handler[channel]) this.handler[channel] = [];
     this.handler[channel].push(handler);
   }
 
-  public unregisterHandler(
-    channel: string,
-    handler: MessageHandlerFn,
-    { unsubIfNoHandler = true },
-  ) {
+  private unregisterHandler(channel: string, handler: MessageHandlerFn) {
     if (this.handler[channel]) {
       this.handler[channel] = this.handler[channel].filter(
         (fn) => fn === handler,
       );
-
-      if (unsubIfNoHandler && this.handler[channel].length === 0) {
-        this.unsubscribeChannel(channel, { unregisterHandler: false });
-      }
     }
   }
 
