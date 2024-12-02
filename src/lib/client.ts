@@ -193,11 +193,19 @@ export class TubesClient {
     this.handler[channel].push(handler);
   }
 
-  public unregisterHandler(channel: string, handler: MessageHandlerFn) {
+  public unregisterHandler(
+    channel: string,
+    handler: MessageHandlerFn,
+    { unsubIfNoHandler = true },
+  ) {
     if (this.handler[channel]) {
       this.handler[channel] = this.handler[channel].filter(
         (fn) => fn === handler,
       );
+
+      if (unsubIfNoHandler && this.handler[channel].length === 0) {
+        this.unsubscribeChannel(channel, { unregisterHandler: false });
+      }
     }
   }
 
