@@ -25,8 +25,6 @@ import { TubesClient } from '@go-tubes/tubes-js';
 const client = new TubesClient({ url: 'ws://localhost:8080', debugging: true });
 
 // Connect to a channel
-client.subscribeChannel("test", console.log);
+client.subscribe("test", console.log);
 client.send("test", { payload: { foo: "bar" } })
 ```
-
-
