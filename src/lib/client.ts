@@ -285,11 +285,11 @@ export class TubesClient {
     }
   }
 
-  public async onConnectionChange(handler: ConnectionHandlerFn) {
+  public onConnectionChange(handler: ConnectionHandlerFn) {
     this.connectionHandlers.push(handler);
   }
 
-  public async offConnectionChange(handler: ConnectionHandlerFn) {
+  public offConnectionChange(handler: ConnectionHandlerFn) {
     this.connectionHandlers = this.connectionHandlers.filter(
       (fn) => fn !== handler
     );
