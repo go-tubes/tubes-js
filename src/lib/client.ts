@@ -1,6 +1,9 @@
 // eslint-disable-next-line no-explicit-any
 type MessageHandlerFn = (payload: any) => void;
 
+export type ConnectionStatus = "connecting" | "connected" | "disconnected";
+export type ConnectionHandlerFn = (status: ConnectionStatus) => void;
+
 const RealtimeMessageTypes = {
   RealtimeMessageTypeSubscribe: "subscribe",
   RealtimeMessageTypeUnsubscribe: "unsubscribe",
@@ -45,6 +48,7 @@ export class TubesClient {
   private connectingPromise?: Promise<void>;
   private ws?: WebSocket;
   private handler: ChannelHandlerStore = {};
+  private connectionHandlers: ConnectionHandlerFn[] = [];
   private currentRetryDelay = 0;
   private subscribedChannels: string[] = [];
 
@@ -58,7 +62,7 @@ export class TubesClient {
 
   private connect(
     delay: number = 0,
-    isReconnect: boolean = false,
+    isReconnect: boolean = false
   ): Promise<void> {
     if (this.closed) return Promise.reject();
     if (!this.connectingPromise) {
@@ -73,11 +77,13 @@ export class TubesClient {
         } else {
           newSocket = new WebSocket(this.config.url!);
         }
+        this.triggerConnectionStatusEvent("connecting");
 
         newSocket.onerror = (err) => {
           this.debug("error", err);
           if (promiseDone) return;
           this.connectingPromise = undefined;
+          this.triggerConnectionStatusEvent("disconnected");
           rej();
           this.retryConnect();
         };
@@ -92,7 +98,7 @@ export class TubesClient {
 
           this.addSocketHandler(newSocket);
           this.ws = newSocket;
-          this.triggerConnectionStatusEvent(true);
+          this.triggerConnectionStatusEvent("connected");
 
           this.connectingPromise = undefined;
           res();
@@ -119,7 +125,7 @@ export class TubesClient {
     };
 
     socket.onclose = () => {
-      this.triggerConnectionStatusEvent(false);
+      this.triggerConnectionStatusEvent("disconnected");
       this.debug("disconnected");
       this.ws = undefined;
       this.retryConnect();
@@ -148,7 +154,7 @@ export class TubesClient {
     {
       payload = {},
       type = RealtimeMessageTypes.RealtimeMessageTypeChannelMessage,
-    },
+    }
   ) {
     await this.lazyInit();
     await this.ws!.send(
@@ -156,7 +162,7 @@ export class TubesClient {
         type: type,
         channel: channel,
         payload: payload,
-      }),
+      })
     );
     this.debug("🔵 Send", { type, channel, payload });
   }
@@ -196,7 +202,7 @@ export class TubesClient {
       type: RealtimeMessageTypes.RealtimeMessageTypeUnsubscribe,
     });
     this.subscribedChannels = this.subscribedChannels.filter(
-      (c) => c !== channel,
+      (c) => c !== channel
     );
     this.debug("Unsubscribed", channel);
   }
@@ -212,7 +218,7 @@ export class TubesClient {
       type: RealtimeMessageTypes.RealtimeMessageTypeUnsubscribe,
     });
     this.subscribedChannels = this.subscribedChannels.filter(
-      (c) => c !== channel,
+      (c) => c !== channel
     );
     this.debug("Unsubscribed", channel);
   }
@@ -225,7 +231,7 @@ export class TubesClient {
   private unregisterHandler(channel: string, handler: MessageHandlerFn) {
     if (this.handler[channel]) {
       this.handler[channel] = this.handler[channel].filter(
-        (fn) => fn === handler,
+        (fn) => fn === handler
       );
     }
   }
@@ -259,11 +265,12 @@ export class TubesClient {
     console.info("[WS_REALTIME_DEBUG]", description, ...data);
   }
 
-  private triggerConnectionStatusEvent(status: boolean) {
+  private triggerConnectionStatusEvent(status: ConnectionStatus) {
     const event = new CustomEvent("wsrealtimeconnectionchange", {
-      detail: { status },
+      detail: { status: status === "connected" },
     });
     window.dispatchEvent(event);
+    this.connectionHandlers.forEach((handler) => handler(status));
   }
 
   private async handleReconnect(): Promise<void> {
@@ -276,6 +283,16 @@ export class TubesClient {
       });
       this.debug("Re-Subscribed", channel);
     }
+  }
+
+  public async onConnectionChange(handler: ConnectionHandlerFn) {
+    this.connectionHandlers.push(handler);
+  }
+
+  public async offConnectionChange(handler: ConnectionHandlerFn) {
+    this.connectionHandlers = this.connectionHandlers.filter(
+      (fn) => fn !== handler
+    );
   }
 
   public async close() {
