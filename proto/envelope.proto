@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package tubes.v1;
+
+option go_package = "github.com/go-tubes/tubes/protobuf/tubespb;tubespb";
+
+// MessageType mirrors the go-tubes message type constants
+// (tubes.MessageType*). MESSAGE_TYPE_UNSPECIFIED maps to an unknown/empty type.
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  SUBSCRIBE = 1;
+  UNSUBSCRIBE = 2;
+  MESSAGE = 3;
+}
+
+// Envelope is the binary, protobuf encoding of the go-tubes message envelope.
+// This file is the canonical contract shared with the Go library
+// (github.com/go-tubes/tubes/protobuf/proto/envelope.proto) and MUST stay in
+// sync with it: field numbers and enum values must match on both sides.
+message Envelope {
+  MessageType type = 1;
+  string channel = 2;
+  bytes payload = 3; // opaque application bytes
+}

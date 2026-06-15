@@ -19,6 +19,35 @@ export interface IncommingMessage {
   payload: any;
 }
 
+export interface OutgoingMessage {
+  type: string;
+  channel: string;
+  payload: unknown;
+}
+
+/**
+ * A TubesCodec controls how the message envelope ({type, channel, payload}) is
+ * serialized on the wire. `binary` reports whether the resulting frames are
+ * binary WebSocket frames (true) or text frames (false); the client sets
+ * `ws.binaryType = "arraybuffer"` when it is true. The same codec must be
+ * configured on the server (e.g. tubes.WithCodec on the Go side).
+ */
+export interface TubesCodec {
+  binary: boolean;
+  encode(message: OutgoingMessage): string | ArrayBuffer | ArrayBufferView;
+  decode(data: string | ArrayBuffer): IncommingMessage;
+}
+
+/** The default codec: JSON over text frames (the historical wire format). */
+export const jsonCodec: TubesCodec = {
+  binary: false,
+  encode: (message) => JSON.stringify(message),
+  decode: (data) =>
+    JSON.parse(
+      typeof data === "string" ? data : new TextDecoder().decode(data)
+    ),
+};
+
 export interface TubesClientConfig {
   socket?: WebSocket;
   url?: string;
@@ -26,6 +55,7 @@ export interface TubesClientConfig {
   exponentialRetryBackoff?: boolean;
   maxRetryAge?: number;
   debugging?: boolean;
+  codec?: TubesCodec;
 }
 
 const defaultConfig: TubesClientConfig = {
@@ -35,6 +65,7 @@ const defaultConfig: TubesClientConfig = {
   maxRetryAge: 12 * 60 * 60, // 12 hours in seconds
   exponentialRetryBackoff: true,
   debugging: false,
+  codec: jsonCodec,
 };
 
 function timeout(ms: number): Promise<void> {
@@ -76,6 +107,9 @@ export class TubesClient {
           newSocket = this.config.socket;
         } else {
           newSocket = new WebSocket(this.config.url!);
+        }
+        if (this.config.codec!.binary) {
+          newSocket.binaryType = "arraybuffer";
         }
         this.triggerConnectionStatusEvent("connecting");
 
@@ -120,7 +154,7 @@ export class TubesClient {
 
   private addSocketHandler(socket: WebSocket) {
     socket.onmessage = (m) => {
-      const data: IncommingMessage = JSON.parse(m.data);
+      const data = this.config.codec!.decode(m.data);
       this.handleMessage(data);
     };
 
@@ -157,13 +191,11 @@ export class TubesClient {
     }
   ) {
     await this.lazyInit();
-    await this.ws!.send(
-      JSON.stringify({
-        type: type,
-        channel: channel,
-        payload: payload,
-      })
-    );
+    const encoded = this.config.codec!.encode({ type, channel, payload });
+    // protobuf-es returns Uint8Array<ArrayBufferLike>, which WebSocket.send
+    // accepts at runtime; the DOM lib's BufferSource type is narrower, so cast
+    // to exactly what send() accepts.
+    await this.ws!.send(encoded as Parameters<WebSocket["send"]>[0]);
     this.debug("🔵 Send", { type, channel, payload });
   }
 
